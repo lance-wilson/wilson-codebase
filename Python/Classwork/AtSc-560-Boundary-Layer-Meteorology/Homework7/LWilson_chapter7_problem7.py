@@ -6,8 +6,8 @@
 # Purpose:
 #   Use values of Q* (net radiation) to find dT_g/dt to find the temperature
 #   of the ground surface and the net radiation into the ground (Q_g) using
-#   the force restore method. Problem 7.7 in Boundary Layer Meteorology by
-#   Roland Stull.
+#   the force restore method. Problem 7.7 in "An Introduction to Boundary
+#   Layer Meteorology by Roland B. Stull.
 #
 # Syntax:
 #   python3 chapter7_problem7.py
