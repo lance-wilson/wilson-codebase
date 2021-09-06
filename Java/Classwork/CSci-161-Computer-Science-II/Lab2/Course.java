@@ -1,0 +1,146 @@
+/**
+ * The Course Class is used to store data for a course.  
+ * A course has a name, an integer number of credit hours, and a number of homework hours.  
+ * <br><br>
+ * @author Lance Wilson
+ * @version Lab 1, 1/28/2016
+ */
+
+public class Course
+{
+    private String name = "";
+    private int credit_hours = -1;
+    private double homework_hours = -1.0;
+
+    /** Default constructor creates a Course with default values.
+     */
+    public Course()
+    {
+        setName("");
+        setCredit(-1);
+        setHomework(-1.0);
+    }
+
+    /** Full parameter constructor takes in a name, number of credit hours, and homework hours and creates a course with those values.
+     * @param inName is the course's name
+     * @param inCredit is the course's credit hours
+     * @param inHomework is the course's homework hours
+     */
+    public Course(String inName, int inCredit, double inHomework)
+    {
+        setName(inName);
+        setCredit(inCredit);
+        setHomework(inHomework);
+    }
+
+    /**
+     * setName sets the course's new name.
+     * @param inName becomes the new name.
+     */
+    public void setName(String inName)
+    {
+        name = inName;
+    }
+
+    /**
+     * setCredit sets the course's credit hours to an inputted value (if the value is valid), or to -1 
+     * (if it is not).
+     * @param inCredit becomes the course's credit hour total.
+     */
+    public void setCredit(int inCredit)
+    {
+        if (inCredit > 0 && inCredit <= 6)
+        {
+            credit_hours = inCredit;
+        }
+        else
+        {
+            credit_hours = -1;
+        }
+    }
+
+    /**
+     * setHomework sets the course's homework hours to an inputted value (if the value is valid), or 
+     * to -1.0 (if it is not).
+     * @param inHomework becomes the course's homework hour total.
+     */
+    public void setHomework(double inHomework)
+    {
+        if (inHomework >= 0.0 && inHomework <= credit_hours*4.0)
+        {
+            homework_hours = inHomework;
+        }
+        else
+        {
+            homework_hours = -1.0;
+        }
+        
+    }
+
+    /**
+     * getName allows access to the course's current name.
+     * @return the current course name.
+     */
+    public String getName()
+    {
+        if (name.equals(""))
+        {
+            return "NOT NAMED YET";
+        }
+        else
+        {
+             return name;
+        }
+    }
+
+    /**
+     * getCredit allows access to the course's current number of credit hours.
+     * @return the current number of course credit hours.
+     */
+    public int getCredit()
+    {
+        return credit_hours;
+    }
+
+    /**
+     * getHomework allows access to the course's current number of homework hours.
+     * @return the current number of course homework hours.
+     */
+    public double getHomework()
+    {
+        return homework_hours;
+    }
+
+    /** load_calc calculates how difficult a course schedule is based on the number of credit and homework hours
+     * @return load is the difficulty index of the course.
+     */
+    public int load_calc()
+    {
+        int load = 0;
+        double loadSum = getCredit() + getHomework();
+
+        if (loadSum > 4 * getCredit())
+        {
+            load = -2;
+        }
+        else if (loadSum <= 4*getCredit() && loadSum > 3*getCredit())
+        {
+            load = -1;
+        }
+        else if (loadSum <= 3*getCredit() && loadSum > 2*getCredit())
+        {
+            load = 0;
+        }
+        else if (loadSum <= 2*getCredit() && loadSum > getCredit())
+        {
+            load = 1;
+        }
+        else if (loadSum <= getCredit())
+        {
+            load = 2;
+        }
+
+        return load;
+    }
+
+}
