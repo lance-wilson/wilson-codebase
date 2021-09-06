@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #                                                               Lance Wilson
 # Name:
-#   backup.py
+#   backup_rsync.py
 #
 # Purpose:
 #   Backup my computer to an external hard drive, hopefully with the following
@@ -11,7 +11,7 @@
 #       - If on both:  copy from computer to drive if timestamps different.
 #
 # Syntax:
-#   python backup.py
+#   python backup_rsync.py
 #
 # Modification History:
 #   2020/11/14 - Lance Wilson:  Created.
