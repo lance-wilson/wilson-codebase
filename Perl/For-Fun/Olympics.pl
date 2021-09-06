@@ -1,7 +1,9 @@
 #!/usr/bin/perl
 # Lance Wilson
 #
-# Summary: Determine the olympic standings for golf based on the current world golf ranking.
+# Summary: Determine the olympic standings for men's golf based on the current world golf ranking.
+#          Will not match final rankings entirely, as there is no accommodation made for players
+#          dropping out or for National Olympic Committees that vary from world golf ranking countries.
 
 use strict;
 
