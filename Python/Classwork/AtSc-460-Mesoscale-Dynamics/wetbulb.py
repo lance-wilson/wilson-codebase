@@ -145,27 +145,3 @@ for x in range(len(thetas)):
     for y in range(len(pressures)):
         print '%.2f ' % theta_eps[x][y],
     print
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
