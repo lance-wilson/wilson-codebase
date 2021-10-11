@@ -80,16 +80,3 @@ while (relative_error > 0.001):
 print 'The maximum value of the function occurs at %1.4f' % xi
 print 'The maximum value at this point is %1.4f' % function(xi)
 print 'The number of iterations was %d.' % iterations
-
-
-
-
-
-
-
-
-
-
-
-
-
