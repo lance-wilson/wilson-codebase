@@ -148,34 +148,3 @@ cbar = plt.colorbar(c2)
 cbar.set_label(r'$\omega$ ($\mu$b/s)')
 
 plt.savefig('Q_omega.png', dpi=400)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
