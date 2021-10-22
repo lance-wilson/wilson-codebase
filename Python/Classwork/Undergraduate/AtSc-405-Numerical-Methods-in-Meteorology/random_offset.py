@@ -76,7 +76,9 @@ with open(sys.argv[1], 'r') as infile:
     header_names = infile.readline().split()
     header_units = infile.readline().split()
 
+    # Data gets loaded into a 2D array.
     data = np.loadtxt(infile)
+    # Convert the columns in the data to individual arrays.
     true_air_speed = data[:,0]
     heading = data[:,1]
     beta = data[:,2]
