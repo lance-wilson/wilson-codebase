@@ -1,0 +1,12 @@
+#Lance Wilson
+CC=gcc
+CFLAGS=-static -c -Wall
+
+all: hw12-LanceWilson.c lib
+	$(CC) -static hw12-LanceWilson.c ./hw12-lib-LanceWilson.a -o hw12-LanceWilson
+lib: ofiles
+	ar rcs hw12-lib-LanceWilson.a hw12-A-LanceWilson.o hw12-B-LanceWilson.o hw12-C-LanceWilson.o hw12-D-LanceWilson.o
+ofiles: hw12-A-LanceWilson.c hw12-B-LanceWilson.c hw12-C-LanceWilson.c hw12-D-LanceWilson.c
+	$(CC) $(CFLAGS) hw12-A-LanceWilson.c hw12-B-LanceWilson.c hw12-C-LanceWilson.c hw12-D-LanceWilson.c
+clean:
+	rm hw12-LanceWilson *.o *.a

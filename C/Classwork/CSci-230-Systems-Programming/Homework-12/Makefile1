@@ -1,0 +1,10 @@
+#Lance Wilson
+CC=gcc
+CFLAGS=-c -Wall
+
+all: hw12-LanceWilson.o hw12-A-LanceWilson.o hw12-B-LanceWilson.o hw12-C-LanceWilson.o hw12-D-LanceWilson.o
+	$(CC) hw12-LanceWilson.o hw12-A-LanceWilson.o hw12-B-LanceWilson.o hw12-C-LanceWilson.o hw12-D-LanceWilson.o -o hw12-LanceWilson
+ofiles: hw12-LanceWilson.c hw12-A-LanceWilson.c hw12-B-LanceWilson.c hw12-C-LanceWilson.c hw12-D-LanceWilson.c
+	$(CC) $(CFLAGS) hw12-LanceWilson.c hw12-A-LanceWilson.c hw12-B-LanceWilson.c hw12-C-LanceWilson.c hw12-D-LanceWilson.c
+clean:
+	rm hw12-LanceWilson *.o
