@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # Name:
-#   calc_forward_file_offset.py
+#   calc_file_num_offset.py
 #
 # Purpose:  Calculate a suggested starting file for when CM1 trajectories
 #           were initialized during a particular model run to ensure trajectory
@@ -9,15 +9,15 @@
 #
 # Syntax:
 #   Forward traj.:
-#       python calc_forward_file_offset.py version_number parcel_id_num
+#       python calc_file_num_offset.py version_number parcel_id_num
 #   Back traj.:
-#       python3 calc_forward_file_offset.py version_number parcel_start_time
+#       python3 calc_file_num_offset.py version_number parcel_start_time
 #
 #   Input:
 #
 # Execution Example:
-#   Forward traj.:  python calc_forward_file_offset.py v4 9
-#   Back traj.:     python calc_forward_file_offset.py v5 6200
+#   Forward traj.:  python calc_file_num_offset.py v4 9
+#   Back traj.:     python calc_file_num_offset.py v5 6200
 #
 # Modification History:
 #   2021/03/05 - Lance Wilson:  Script to suggest a file_num_offset for the
@@ -32,10 +32,10 @@ import numpy as np
 import sys
 
 def help_message():
-    print('Syntax (forward traj.): python3 calc_forward_file_offset.py version_number parcel_id_num')
-    print('Example (forward traj.): python calc_forward_file_offset.py v4 9')
-    print('Syntax (back traj.): python3 calc_forward_file_offset.py version_number parcel_start_time')
-    print('Example (back traj.): python calc_forward_file_offset.py v5 6200')
+    print('Syntax (forward traj.): python3 calc_file_num_offset.py version_number parcel_id_num')
+    print('Example (forward traj.): python calc_file_num_offset.py v4 9')
+    print('Syntax (back traj.): python3 calc_file_num_offset.py version_number parcel_start_time')
+    print('Example (back traj.): python calc_file_num_offset.py v5 6200')
     print('Currently supported version numbers: v3, 10s, v4, v5')
     sys.exit()
 
