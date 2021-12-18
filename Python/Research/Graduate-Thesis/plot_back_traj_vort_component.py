@@ -76,7 +76,7 @@ else:
 # User-Defined Input/Output Directories and Constants
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Directory with CM1 model output.
-model_dir = '/vortex2/lwilson/75m_100p_{:s}/'.format(version_number)
+model_dir = '75m_100p_{:s}/'.format(version_number)
 # Directory where back trajectory analysis data is stored
 analysis_dir = model_dir + 'back_traj_analysis/'
 # Directory with netCDF files of vorticity budget data interpolated to trajectory locations.
