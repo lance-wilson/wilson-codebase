@@ -8,11 +8,11 @@
 #           and so that the number of command line arguments remains manageable.
 #
 # Syntax: import back_trajectory_start_pos
-#         start_pos = back_trajectory_start_pos.get_start_pos()
+#         start_pos = back_trajectory_start_pos.get_start_pos(parcel_label)
 #
 # Execution Example:
 #   import back_trajectory_start_pos
-#   start_pos = back_trajectory_start_pos.get_start_pos()
+#   start_pos = back_trajectory_start_pos.get_start_pos('v5_meso_tornadogenesis')
 #
 # Modification History:
 #   2021/08/25 - Lance Wilson:  Created.
