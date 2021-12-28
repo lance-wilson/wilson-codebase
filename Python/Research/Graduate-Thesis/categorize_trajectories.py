@@ -92,6 +92,11 @@ if version_number == '3' or version_number =='10s':
     print('Version number is not valid.')
     print('Currently supported version numbers: 4, 5')
     sys.exit()
+    
+if version_number.startswith('v'):
+    run_number = int(version_number[-1])
+else:
+    run_number = 3
 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # User-Defined Input/Output Directories and Constants
