@@ -31,6 +31,9 @@
 #   2021/11/12 - Lance Wilson:  Added comments and improvements to calculations
 #                               of intialization positions that are going to be
 #                               plotted and plot frequency.
+#   2021/12/22 - Lance Wilson:  Fixed so that plot_limit_minutes greater than
+#                               the available amount of data does not cause
+#                               duplication of plots at earliest times.
 #
 
 #from mpl_toolkits.mplot3d import Axes3D
@@ -242,6 +245,12 @@ if len(plot_indices) > 0:
 # Convert plot_limit_minutes to seconds.
 plot_limit_seconds = 60. * plot_limit_minutes
 
+data_timespan = ds.variables['time'][-1] - ds.variables['time'][0]
+
+# Ensure that the data does not repeat plots if the plot limit is greater than
+#   the available amount of data by limiting it to the total timespan of data.
+if plot_limit_seconds > data_timespan:
+    plot_limit_seconds = np.round(data_timespan)
 # Array of all time steps lengths for this set of trajectory data.
 time_step_lengths = np.round(ds.variables['time'][1:] - ds.variables['time'][:-1])
 # Cumulative sum array of the inverse of the time step lengths, as we need to

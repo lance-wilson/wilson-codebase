@@ -61,6 +61,33 @@ def calc_file_offset(version, parcel_start_time):
         help_message()
     return int(((parcel_start_time-transition_time)/output_freq) + transition_file)
 
+def calc_parcel_start_time(parcel_id, namelist_filename, namelist_dir='./'):
+    # Add the directory slash for concatenating with the filename if it is not
+    #   already there.
+    if not namelist_dir.endswith('/'):
+        namelist_dir = namelist_dir + '/'
+
+    # If the namelist file name does not include the full path, add the
+    #   namelist directory to the beginning of the file name (default is
+    #   current directory: './').
+    if not '/' in namelist_filename:
+        namelist_filename = namelist_dir + namelist_filename
+
+    try:
+        # Look at the namelist.input file to get the parcel initialization time.
+        with open(namelist_filename, 'r') as namelist_file:
+            namelist_lines = namelist_file.readlines()
+            for line in namelist_lines:
+                line = line.strip()
+                if line.startswith('var2'):
+                    line = line.replace(',','')
+                    line = line.split('=')
+                    parcel_start_time = int(float(line[-1]))
+    except IOError:
+        parcel_start_time = float(parcel_id)
+
+    return parcel_start_time
+
 if __name__ == '__main__':
     if len(sys.argv) > 2:
         version = sys.argv[1]
@@ -73,20 +100,7 @@ if __name__ == '__main__':
     namelist_dir = '75m_100p_{:s}/namelists/'.format(version)
     namelist_filename = namelist_dir + 'namelist_{:s}.input'.format(parcel_id)
 
-    try:
-        # Look at the namelist.input file to get the parcel initialization time.
-        with open(namelist_filename, 'r') as namelist_file:
-            namelist_lines = namelist_file.readlines()
-            for line in namelist_lines:
-                line = line.strip()
-                if line.startswith('var2'):
-                    line = line.replace(',','')
-                    line = line.split('=')
-                    parcel_start_time = int(float(line[-1]))
-    # If there is no namelist file, then assume that a back trajectory
-    #   initialization time has been entered.
-    except IOError:
-        parcel_start_time = float(parcel_id)
+    parcel_start_time = calc_parcel_start_time(parcel_id, namelist_filename)
 
     file_num_offset = calc_file_offset(version, parcel_start_time)
 

@@ -8,7 +8,10 @@
 #
 # Syntax: python3 plot_back_traj_vort_component.py version_number parcel_label
 #
-#   Input:
+# Input:  netCDF file containing vorticity budget data interpolated to back
+#           trajectory posititions
+#         netCDF file containing intialization positions of back trajectories
+#           determined to be located in a certain region of the storm
 #
 # Execution Example:
 #   python3 plot_back_traj_vort_component.py v5 downdraft
@@ -35,25 +38,29 @@
 #   2021/11/18 - Lance Wilson:  Split from plot_back_traj_budgets to begin
 #                               plotting graphs of each component for an
 #                               individual trajectory vs. time.
+#   2021/12/21 - Lance Wilson:  Added trajectory categorization object for
+#                               selecting the trajectories that are to be
+#                               plotted.
 #
 
 from back_traj_interp_class import Back_traj_ds
+from categorize_traj_class import Cat_traj
 from parameter_list import budget_legendlabels, title_dir_sub
 
 from netCDF4 import Dataset
-from netCDF4 import MFDataset
-
+import itertools
 import matplotlib
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
-mandatory_arg_num = 2
+mandatory_arg_num = 3
 
 if len(sys.argv) > mandatory_arg_num:
     version_number = sys.argv[1]
     parcel_label = sys.argv[2]
+    parcel_category = sys.argv[3]
 else:
     print('Parcel label and version number must be specified.')
     print('Syntax: python3 plot_back_traj_vort_component.py version_number parcel_label')
@@ -81,15 +88,14 @@ model_dir = '75m_100p_{:s}/'.format(version_number)
 analysis_dir = model_dir + 'back_traj_analysis/'
 # Directory with netCDF files of vorticity budget data interpolated to trajectory locations.
 interp_dir = analysis_dir + 'parcel_interpolation/'
+# Directory with netCDF files containing parcel initialization positions
+#   belong to a particular region of the storm.
+cat_dir = analysis_dir + 'categorized_trajectories/'
 # Directory for output images.
 output_dir = analysis_dir + 'BackTrajectoryImages/'
 
 # How far back (in minutes) to plot trajectories.
 plot_limit_minutes = 10.
-
-# Trajectory to be plotted.
-# For now, this is a constant, but will hopefully be calculated in another program at some point.
-plot_index = 100
 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Open object using netCDF files containing vorticity budget data interpolated
@@ -138,6 +144,21 @@ for key in ds_obj.budget_var_keys:
             budget_var_names[key[0] + '_equation'].append(key)
 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Trajectories to be plotted, based on intialization positions stored in a
+#   netCDF file created by collect_ff_trajectories.
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+cat_traj_obj = Cat_traj(version_number, cat_dir, parcel_label, parcel_category)
+# It is possible that a file could be created without there being any data in
+#   it, so plots will only be attempted if the object's "existing_file" flag
+#   is true.
+if cat_traj_obj.existing_file:
+    # Initialization positions are converted to an array index.
+    plot_indices = cat_traj_obj.meters_to_trajnum(ds_obj.xpos, ds_obj.ypos, ds_obj.zpos)
+else:
+    print 'Categorized trajectory file does not contain any data'
+    sys.exit()
+
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Calculate how many time steps of trajectory data to plot (based on
 #   user-defined number of minutes to be plotted).
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -170,13 +191,34 @@ plot_limit = np.argwhere(cumulative_time_steps <= plot_limit_seconds)[-1,0] + 1
 #   Plot Budget Components                                           #
 #                                                                    #
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^#
-for budget_coord_type, budget_var_list in budget_var_names.items():
+#for plot_index in plot_indices:
+#    for budget_coord_type, budget_var_list in budget_var_names.items():
+for plot_index, (budget_coord_type, budget_var_list) in itertools.product(plot_indices, budget_var_names.items()):
+
+    # Initialization (latest time) trajectory positions.
+    traj_init_xpos = ds_obj.xpos[0, plot_index]
+    traj_init_ypos = ds_obj.ypos[0, plot_index]
+    traj_init_zpos = ds_obj.zpos[0, plot_index]
+
+    # Title string for whether this is the model-based budget calculation or
+    #   the direct equation calculation.
+    equation_string = budget_coord_type.split('_')[-1].title()
+    if equation_string == 'Budget':
+        context_string = ' from CM1 Output'
+    else:
+        context_string = ', Directly Calculated'
+    # Dimension of the data to put in the title.
+    direction = budget_coord_type.split('_')[0]
+    dir_string = title_dir_sub(direction)
+
+    # Title string for trajectory that is plotted and its starting positions.
+    title_substring = '\nTrajectory {:d}, Initialized (z,y,x): {:.1f}, {:.1f}, {:.1f}'.format(plot_index, traj_init_zpos, traj_init_ypos, traj_init_xpos)
+
     # Initialize the plot.
     fig2 = plt.figure(figsize=(13,7))
     ax = fig2.add_subplot(111)
 
     budget_vars_sum = np.zeros((ds_obj.parcel_time_step_num))
-
     for budget_var_name in budget_var_list:
         # For the turbulence and diffusion variables, add them together since
         #   they are small and the difference between the horizontal and
@@ -198,18 +240,7 @@ for budget_coord_type, budget_var_list in budget_var_names.items():
     # Reference line at 0.
     plt.plot(ds_obj.simulation_times[:plot_limit][::-1], np.zeros(ds_obj.simulation_times[:plot_limit].shape), color='black')
 
-    # Title string for whether this is the model-based budget calculation or
-    #   the direct equation calculation.
-    equation_string = budget_coord_type.split('_')[-1].title()
-    if equation_string == 'Budget':
-        context_string = ' from CM1 Output'
-    else:
-        context_string = ', Directly Calculated'
-    # Dimension of the data to put in the title.
-    direction = budget_coord_type.split('_')[0]
-    dir_string = title_dir_sub(direction)
-
-    plt.title('{:s} Vorticity {:s} Components{:s}'.format(dir_string, equation_string, context_string))
+    plt.title('{:s} Vorticity {:s} Components{:s}{:s}'.format(dir_string, equation_string, context_string, title_substring))
     plt.xlim(ds_obj.simulation_times[plot_limit-1], initialize_time)
     plt.xlabel('Simulation Time (seconds)')
     plt.ylabel(r'Vorticity Tendency (s$\mathregular{^{-2}}$)')

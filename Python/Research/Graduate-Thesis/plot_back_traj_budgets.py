@@ -33,7 +33,10 @@
 #                               before the plotting loop (eliminates the need
 #                               for the time loop).
 #   2021/11/23 - Lance Wilson:  Implemented use of Back_traj_ds object for
-#                               accessing data. 
+#                               accessing data.
+#   2021/12/22 - Lance Wilson:  Fixed so that plot_limit_minutes greater than
+#                               the available amount of data does not cause
+#                               duplication of plots at earliest times.
 #
 
 from back_traj_interp_class import Back_traj_ds
@@ -287,6 +290,13 @@ time_step_lengths = np.round(ds.variables['time'][1:] - ds.variables['time'][:-1
 # Cumulative sum array of the inverse of the time step lengths, as we need to
 #   know how many indices to count backward.
 cumulative_time_steps = np.cumsum(time_step_lengths[::-1])
+
+data_timespan = ds.variables['time'][-1] - ds.variables['time'][0]
+
+# Ensure that the data does not repeat plots if the plot limit is greater than
+#   the available amount of data by limiting it to the total timespan of data.
+if plot_limit_seconds > data_timespan:
+    plot_limit_seconds = np.round(data_timespan)
 
 # Check that at least one time step is going to be plotted (i.e.
 #   plot_limit_seconds must be no smaller than the smallest time_step),
