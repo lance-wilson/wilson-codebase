@@ -15,6 +15,8 @@
 #
 # Modification History:
 #   2021/11/19 - Lance Wilson:  Created.
+#   2022/01/27 - Lance Wilson:  Change to use getBudgetData method to get
+#                               trajectory positions.
 #
 
 from netCDF4 import Dataset
@@ -98,23 +100,6 @@ class Back_traj_ds:
             # Total number of parcels for the full set of data.
             self.total_parcel_num = fully_valid_parcel_num + partially_valid_parcel_num
 
-            # Position data for the fully valid back trajectories.
-            xpos_full = np.copy(self.ds_full.variables['xpos'])
-            ypos_full = np.copy(self.ds_full.variables['ypos'])
-            zpos_full = np.copy(self.ds_full.variables['zpos'])
-
-            # Position data for the partially valid trajectories with the
-            #   buffer of nan's added to the end of the array.
-            xpos_partial = np.concatenate((np.copy(self.ds_partial.variables['xpos']), self.nan_buffer))
-            ypos_partial = np.concatenate((np.copy(self.ds_partial.variables['ypos']), self.nan_buffer))
-            zpos_partial = np.concatenate((np.copy(self.ds_partial.variables['zpos']), self.nan_buffer))
-
-            # Combine the full and partial sets of trajectory positions into
-            #   one array.
-            self.xpos = np.concatenate((xpos_full, xpos_partial), axis=1)
-            self.ypos = np.concatenate((ypos_full, ypos_partial), axis=1)
-            self.zpos = np.concatenate((zpos_full, zpos_partial), axis=1)
-
             # Model file at the earliest time of the trajectory dataset (zero
             #   indexed, add one to get the correct CM1 model file).
             # Using value from fully valid data, since it should be the same in
@@ -134,11 +119,6 @@ class Back_traj_ds:
         # If only the fully valid dataset exists.
         #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         if self.full_flag == True and self.partial_flag == False:
-            # Position data for the back trajectories.
-            self.xpos = np.copy(self.ds_full.variables['xpos'])
-            self.ypos = np.copy(self.ds_full.variables['ypos'])
-            self.zpos = np.copy(self.ds_full.variables['zpos'])
-
             # Total number of parcels for this set of data.
             self.total_parcel_num = self.ds_full.dimensions['number_parcels'].size
 
@@ -162,11 +142,6 @@ class Back_traj_ds:
         # If only the partially valid dataset exists.
         #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         if self.full_flag == False and self.partial_flag == True:
-            # Position data for the back trajectories.
-            self.xpos = np.copy(self.ds_partial.variables['xpos'])
-            self.ypos = np.copy(self.ds_partial.variables['ypos'])
-            self.zpos = np.copy(self.ds_partial.variables['zpos'])
-
             # Total number of parcels for this set of data.
             self.total_parcel_num = self.ds_partial.dimensions['number_parcels'].size
 
@@ -185,6 +160,11 @@ class Back_traj_ds:
             #   'pos') and those that have only one dimension (which should
             #   just be file_num_offset).
             self.budget_var_keys = [var_name for var_name in self.ds_partial.variables.keys() if not var_name.endswith('pos') if len(self.ds_partial.variables[var_name].dimensions) > 1]
+
+        # Position data for the back trajectories.
+        self.xpos = self.getBudgetData('xpos')
+        self.ypos = self.getBudgetData('ypos')
+        self.zpos = self.getBudgetData('zpos')
 
     #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     # Called at exit time to close the netCDF files.
