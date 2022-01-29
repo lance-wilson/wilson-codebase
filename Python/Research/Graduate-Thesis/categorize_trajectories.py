@@ -35,6 +35,9 @@
 #                               accessing data.
 #   2021/12/14 - Lance Wilson:  Split from plot_back_traj_budgets to determine
 #                               which trajectories are in the forward flank.
+#   2022/01/27 - Lance Wilson:  Adjusted access of catergorized trajectory
+#                               object to accommodate new method of setting up
+#                               the netCDF file.
 #
 
 from back_traj_interp_class import Back_traj_ds
@@ -92,7 +95,7 @@ if version_number == '3' or version_number =='10s':
     print('Version number is not valid.')
     print('Currently supported version numbers: 4, 5')
     sys.exit()
-    
+
 if version_number.startswith('v'):
     run_number = int(version_number[-1])
 else:
@@ -403,7 +406,7 @@ for y_plot_val, z_plot_val in itertools.product(y_points, z_points):
 
     # Get the number of zooms to remove those clicks from the list of coordinates.
     zooms = input('# of Zooms (-1 to cancel):')
-    if zooms == '-1':
+    if zooms == -1:
         sys.exit()
     # Convert the non-zoom coordinates to an array.
     traj_x_meters = np.array(coords[int(zooms):])
@@ -422,6 +425,7 @@ for y_plot_val, z_plot_val in itertools.product(y_points, z_points):
 # Output the set of points to the file for this category.
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 cat_traj_obj = Cat_traj(version_number, output_dir, parcel_label, category)
+cat_traj_obj.open_file(category)
 
 # Convert the list of new points a 2D array.
 new_initial_pos = np.array(coords_meters)
