@@ -7,14 +7,17 @@
 #           selected to belong to a specific region of the storm.
 #
 # Syntax: 
-#   traj_data = 
+#   traj_data = Cat_traj(version_number, data_dir, parcel_label, category)
 #
 # Execution Example:
-#   from categorize_traj_class import 
-#   traj_data = back_traj_ds('v5', 'parcel_interpolation/', 'v5_meso_tornadogenesis')
+#   from categorize_traj_class import Cat_traj
+#   traj_data = Cat_traj('v5', 'parcel_interpolation/', 'v5_meso_tornadogenesis', 'forward_flank')
 #
 # Modification History:
 #   2021/12/16 - Lance Wilson:  Created.
+#   2022/01/27 - Lance Wilson:  Moved file setup to separate method so that
+#                               the existence of a file can be checked without
+#                               creating an empty one.
 #
 
 from netCDF4 import Dataset
@@ -31,21 +34,34 @@ class Cat_traj:
         else:
             back_traj_file_name = '{:s}_{:s}_{:s}.nc'.format(version_number, parcel_label, category)
 
-        # If this dataset already exists, open it for reading and writing.
-        if path.isfile(data_dir + back_traj_file_name):
-            self.read_existing_nc(data_dir, back_traj_file_name)
+        if not data_dir.endswith('/'):
+            data_dir = data_dir + '/'
+
+        self.back_traj_file_path = data_dir + back_traj_file_name
+
+        # Check whether this dataset already exists.
+        if path.isfile(self.back_traj_file_path):
             self.existing_file = True
+        else:
+            self.existing_file = False
+
+    #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    # Open the netCDF file.
+    #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    def open_file(self, category):
+        # If this dataset already exists, open it for reading and writing.
+        if self.existing_file == True:
+            self.read_existing_nc() 
         # Otherwise, create a new file.
         else:
-            self.create_new_nc(data_dir, back_traj_file_name, category)
-            self.existing_file = False
+            self.create_new_nc(category)
 
     #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     # Create a new netCDF file to store the data.
     #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    def create_new_nc(self, data_dir, back_traj_file_name, category):
+    def create_new_nc(self, category):
         # Open the output netCDF file.
-        self.ds = Dataset(data_dir + back_traj_file_name, mode='w')
+        self.ds = Dataset(self.back_traj_file_path, mode='w')
         # From https://stackoverflow.com/a/41627098
         # Close netCDF files when the program exits.
         atexit.register(self.closeNCfile, self.ds)
@@ -76,8 +92,8 @@ class Cat_traj:
     # Open and read netCDF files containing initialization locations of back
     #   trajectories in the supplied category.
     #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    def read_existing_nc(self, data_dir, back_traj_file_name):
-        self.ds = Dataset(data_dir + back_traj_file_name, mode='r+')
+    def read_existing_nc(self):
+        self.ds = Dataset(self.back_traj_file_path, mode='r+')
         # From https://stackoverflow.com/a/41627098
         # Close netCDF files when the program exits.
         atexit.register(self.closeNCfile, self.ds)
@@ -104,19 +120,19 @@ class Cat_traj:
     #   the usable trajectories).
     #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     def meters_to_trajnum(self, xpos, ypos, zpos):
-        traj_num = []
+        traj_num = np.zeros(self.initial_pos[:,0].shape, dtype=np.int)
 
-        for coord_meters in self.initial_pos:
+        for i, coord_meters in enumerate(self.initial_pos):
             x_indices = np.argwhere(xpos[0] == coord_meters[2])
             y_indices = np.argwhere(ypos[0] == coord_meters[1])
             z_indices = np.argwhere(zpos[0] == coord_meters[0])
 
             # Get indices that are to be plotted from the intersection of the x
             #   and y parts, and then the intersection of that and the z part.
-            part1 = np.intersect1d(x_indices, y_indices)[0]
-            traj_num.append(np.intersect1d(part1, z_indices)[0])
+            part1 = np.intersect1d(x_indices, y_indices)
+            traj_num[i] = np.intersect1d(part1, z_indices)[0]
 
-        return np.array(traj_num)
+        return traj_num
 
     #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     # Called at exit time to close the netCDF files.
