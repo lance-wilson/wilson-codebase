@@ -14,7 +14,7 @@
 #
 # Execution Example:
 #   from parameter_list import parameters
-#   parameters = parameters('dbz')
+#   params = parameters('dbz')
 #
 # Modification History:
 #   2021/07/28 - Lance Wilson:  Created.
@@ -125,6 +125,8 @@ def budget_barlabels(variable):
             'xvortb_edif'      : r'Total Diffusion of E-W Vort. (s$\mathregular{^{-2}}$)',
             'yvortb_edif'      : r'Total Diffusion of N-S Vort. (s$\mathregular{^{-2}}$)',
             'zvortb_edif'      : r'Total Diffusion of Vertical Vort. (s$\mathregular{^{-2}}$)',
+            # Height
+            'zpos'             : r'Height Above Ground (m)',
         }
     return bar_labels[variable]
 
@@ -153,6 +155,19 @@ def budget_legendlabels(variable):
             }
     return legend_labels[variable[1:]]
 
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Colormap to be used for coloring trajectory paths.
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+def budget_colormap(budget_var_name):
+    if budget_var_name == 'zpos':
+        colormap_name = 'gist_rainbow'
+    else:
+        colormap_name = 'RdBu_r'
+    return colormap_name
+
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Substitute coordinate identifier with full description.
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 def title_dir_sub(variable):
     title_dir_sub = {
                 'x' : 'East-West Component of',
