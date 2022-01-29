@@ -42,24 +42,28 @@ def help_message():
 def calc_file_offset(version, parcel_start_time):
     if version == 'v3':
         transition_time = 0.
+        comparison_time = 0.
         transition_file = 1
         output_freq = 60.
     elif version == '10s':
         transition_time = 6000.
+        comparison_time = 0. if parcel_start_time <= transition_time else transition_time
         transition_file = 1 if parcel_start_time <= transition_time else 101
         output_freq = 60. if parcel_start_time <= transition_time else 10.
     elif version == 'v4':
         transition_time = 3600.
+        comparison_time = 0. if parcel_start_time <= transition_time else transition_time
         transition_file = 1 if parcel_start_time <= transition_time else 61
         output_freq = 60. if parcel_start_time <= transition_time else 10.
     elif version == 'v5':
         transition_time = 4800.
+        comparison_time = 0. if parcel_start_time <= transition_time else transition_time
         transition_file = 1 if parcel_start_time <= transition_time else 81
         output_freq = 60. if parcel_start_time <= transition_time else 10.
     else:
         print('Version number not found')
         help_message()
-    return int(((parcel_start_time-transition_time)/output_freq) + transition_file)
+    return int(((parcel_start_time-comparison_time)/output_freq) + transition_file)
 
 def calc_parcel_start_time(parcel_id, namelist_filename, namelist_dir='./'):
     # Add the directory slash for concatenating with the filename if it is not
