@@ -41,6 +41,9 @@
 #   2021/12/21 - Lance Wilson:  Added trajectory categorization object for
 #                               selecting the trajectories that are to be
 #                               plotted.
+#   2022/01/27 - Lance Wilson:  Adjusted access of catergorized trajectory
+#                               object to accommodate new method of setting up
+#                               the netCDF file.
 #
 
 from back_traj_interp_class import Back_traj_ds
@@ -152,6 +155,7 @@ cat_traj_obj = Cat_traj(version_number, cat_dir, parcel_label, parcel_category)
 #   it, so plots will only be attempted if the object's "existing_file" flag
 #   is true.
 if cat_traj_obj.existing_file:
+    cat_traj_obj.open_file(parcel_category)
     # Initialization positions are converted to an array index.
     plot_indices = cat_traj_obj.meters_to_trajnum(ds_obj.xpos, ds_obj.ypos, ds_obj.zpos)
 else:
