@@ -456,7 +456,7 @@ for budget_var_name in budget_var_names:
         plt.tight_layout()
 
         # Code to save files
-        #image_file_name = output_dir + 'cm1_backtraj_vortbudget_{:s}_{:s}_{:s}_nc{:d}_time{:d}.png'.format(parcel_label, budget_var_name, variable, model_file_num, real_file_time)
+        #image_file_name = output_dir + 'cm1_backtraj_category_{:s}_{:s}_{:s}_{:s}_nc{:d}_time{:d}.png'.format(parcel_label, parcel_category, budget_var_name, variable, model_file_num, real_file_time)
         #plt.savefig(image_file_name, dpi=400)
 
     end = time.time()
