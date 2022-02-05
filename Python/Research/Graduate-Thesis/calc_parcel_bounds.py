@@ -24,6 +24,7 @@
 #                               calc_vort_budget.py to calculate boundaries
 #                               based on back trajectory files that will also
 #                               be used in calc_vort_equation.py.
+#   2022/02/04 - Lance Wilson:  Updated comments for calc_bound_index function.
 #
 
 from netCDF4 import Dataset
@@ -33,6 +34,10 @@ import sys
 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Calculate the index to use as a boundary value in the vorticity budget output file.
+#   Arguments:
+#       coord: locations of model grid points
+#       position: location of point to calculate index from
+#       bound_buffer: integer to add to the index to include a buffer zone
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 def calc_bound_index(coord, position, bound_buffer):
     # Calculate the difference between the minimum or maximum position and each
