@@ -12,6 +12,7 @@
 # Execution Example:
 #   from categorize_traj_class import Cat_traj
 #   traj_data = Cat_traj('v5', 'parcel_interpolation/', 'v5_meso_tornadogenesis', 'forward_flank')
+#   traj_data.open_file('forward_flank')
 #
 # Modification History:
 #   2021/12/16 - Lance Wilson:  Created.
