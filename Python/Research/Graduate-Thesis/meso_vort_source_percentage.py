@@ -15,6 +15,7 @@
 #
 # Modification History:
 #   2022/01/28 - Lance Wilson:  Created.
+#   2022/02/09 - Lance Wilson:  Added helicity calculations.
 
 from back_traj_interp_class import Back_traj_ds
 from categorize_traj_class import Cat_traj
@@ -152,6 +153,11 @@ xvort = np.copy(ds.variables['xvort'][model_time_step,z1:z2,y1:y2,x1:x2])
 yvort = np.copy(ds.variables['yvort'][model_time_step,z1:z2,y1:y2,x1:x2])
 zvort = np.copy(ds.variables['zvort'][model_time_step,z1:z2,y1:y2,x1:x2])
 
+# Get values of wind interpolated to the scalar grid points.
+u_interp = np.copy(ds.variables['uinterp'][model_time_step,z1:z2,y1:y2,x1:x2])
+v_interp = np.copy(ds.variables['vinterp'][model_time_step,z1:z2,y1:y2,x1:x2])
+w_interp = np.copy(ds.variables['winterp'][model_time_step,z1:z2,y1:y2,x1:x2])
+
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Interpolate vorticity to the full dataset of back trajectory points at this
 #   time step.
@@ -165,6 +171,21 @@ zvort_full = interpolate.interpn(grid_coord, zvort, full_traj_points, method = '
 horiz_full = np.sqrt(np.square(xvort_full) + np.square(yvort_full))
 # Full 3D vorticity.
 vort3d_full = np.sqrt(np.square(xvort_full) + np.square(yvort_full) + np.square(zvort_full))
+
+# Individual wind components.
+u_full = interpolate.interpn(grid_coord, u_interp, full_traj_points, method = 'linear', bounds_error=False, fill_value= np.nan)
+v_full = interpolate.interpn(grid_coord, v_interp, full_traj_points, method = 'linear', bounds_error=False, fill_value= np.nan)
+w_full = interpolate.interpn(grid_coord, w_interp, full_traj_points, method = 'linear', bounds_error=False, fill_value= np.nan)
+
+# Helicity components.
+x_helicity_full = u_full * xvort_full
+y_helicity_full = v_full * yvort_full
+z_helicity_full = w_full * zvort_full
+
+# Horizontal helicity.
+horiz_helicity_full = x_helicity_full + y_helicity_full
+# Full 3D helicity.
+helicity_3d_full = x_helicity_full + y_helicity_full + z_helicity_full
 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Get back trajectory data at the analysis time step for the category (or
@@ -218,6 +239,21 @@ horiz_category = np.sqrt(np.square(xvort_category) + np.square(yvort_category))
 # Full 3D vorticity.
 vort3d_category = np.sqrt(np.square(xvort_category) + np.square(yvort_category) + np.square(zvort_category))
 
+# Individual wind components.
+u_category = interpolate.interpn(grid_coord, u_interp, category_traj_points, method = 'linear', bounds_error=False, fill_value= np.nan)
+v_category = interpolate.interpn(grid_coord, v_interp, category_traj_points, method = 'linear', bounds_error=False, fill_value= np.nan)
+w_category = interpolate.interpn(grid_coord, w_interp, category_traj_points, method = 'linear', bounds_error=False, fill_value= np.nan)
+
+# Helicity components.
+x_helicity_category = u_category * xvort_category
+y_helicity_category = v_category * yvort_category
+z_helicity_category = w_category * zvort_category
+
+# Horizontal helicity.
+horiz_helicity_category = x_helicity_category + y_helicity_category
+# Full 3D helicity.
+helicity_3d_category = x_helicity_category + y_helicity_category + z_helicity_category
+
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Calculate the percentage of vorticity that comes from this category.
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -231,6 +267,16 @@ horiz_percent = 100. * np.sum(horiz_category)/np.sum(horiz_full)
 # Full 3D vorticity.
 full3d_percent = 100. * np.sum(vort3d_category)/np.sum(vort3d_full)
 
+# Individual helicity components.
+x_helicity_percent = 100. * np.sum(x_helicity_category)/np.sum(x_helicity_full)
+y_helicity_percent = 100. * np.sum(y_helicity_category)/np.sum(y_helicity_full)
+z_helicity_percent = 100. * np.sum(z_helicity_category)/np.sum(z_helicity_full)
+
+# Horizontal helicity.
+horiz_helicity_percent = 100. * np.sum(horiz_helicity_category)/np.sum(horiz_helicity_full)
+# Full 3D helicity.
+helicity_3d_percent = 100. * np.sum(helicity_3d_category)/np.sum(helicity_3d_full)
+
 # Convert list of categories to a string that can be printed out.
 category_string = '{:s}'.format(parcel_category_arg).strip('[]').replace("'", "")
 
@@ -242,4 +288,13 @@ print('{:.1f} percent of vertical vorticity is from ({:s}) region(s)'.format(z_p
 
 print('{:.1f} percent of horizontal vorticity is from ({:s}) region(s)'.format(horiz_percent, category_string))
 print('{:.1f} percent of 3D vorticity is from ({:s}) region(s)'.format(full3d_percent, category_string))
+
+print('')
+
+print('{:.1f} percent of E-W horizontal helicity is from ({:s}) region(s)'.format(x_helicity_percent, category_string))
+print('{:.1f} percent of N-S horizontal helicity is from ({:s}) region(s)'.format(y_helicity_percent, category_string))
+print('{:.1f} percent of vertical helicity is from ({:s}) region(s)'.format(z_helicity_percent, category_string))
+
+print('{:.1f} percent of horizontal helicity is from ({:s}) region(s)'.format(horiz_helicity_percent, category_string))
+print('{:.1f} percent of 3D helicity is from ({:s}) region(s)'.format(helicity_3d_percent, category_string))
 
