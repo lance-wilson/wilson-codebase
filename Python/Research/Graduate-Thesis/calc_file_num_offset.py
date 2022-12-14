@@ -88,9 +88,42 @@ def calc_parcel_start_time(parcel_id, namelist_filename, namelist_dir='./'):
                     line = line.split('=')
                     parcel_start_time = int(float(line[-1]))
     except IOError:
-        parcel_start_time = float(parcel_id)
+        try:
+            parcel_start_time = float(parcel_id)
+        except ValueError:
+            print('Parcel start time could not be calculated.')
+            sys.exit()
 
     return parcel_start_time
+
+def calc_parcel_end_time(parcel_id, namelist_filename, namelist_dir='./'):
+    # Add the directory slash for concatenating with the filename if it is not
+    #   already there.
+    if not namelist_dir.endswith('/'):
+        namelist_dir = namelist_dir + '/'
+
+    # If the namelist file name does not include the full path, add the
+    #   namelist directory to the beginning of the file name (default is
+    #   current directory: './').
+    if not '/' in namelist_filename:
+        namelist_filename = namelist_dir + namelist_filename
+
+    # Use the namelist.input file to get when this parcel run ends.
+    try:
+        # Look at the namelist.input file to get the parcel end time.
+        with open(namelist_filename, 'r') as namelist_file:
+            namelist_lines = namelist_file.readlines()
+            for line in namelist_lines:
+                line = line.strip()
+                if line.startswith('timax'):
+                    line = line.replace(',','')
+                    line = line.split('=')
+                    parcel_end_time = int(float(line[-1]))
+    except IOError:
+        print('Parcel end time cannot be found.')
+        sys.exit()
+
+    return parcel_end_time
 
 if __name__ == '__main__':
     if len(sys.argv) > 2:

@@ -4,6 +4,7 @@
 #   categorize_trajectories.py
 #
 # Purpose:  Plot CM1 backward trajectories and determine which ones belong in 
+#           different source regions.
 #
 # Syntax: python3 categorize_trajectories.py version_number parcel_label field_variable category [y=y_val1[,yval2]] [z=z_val1[,z_val2]]
 #

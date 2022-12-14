@@ -39,7 +39,7 @@ import sys
 #       position: location of point to calculate index from
 #       bound_buffer: integer to add to the index to include a buffer zone
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-def calc_bound_index(coord, position, bound_buffer):
+def calc_bound_index(coord, position, bound_buffer=0):
     # Calculate the difference between the minimum or maximum position and each
     #   grid point value (in meters).
     pos_diff = np.abs(coord - position)
@@ -53,7 +53,7 @@ def calc_bound_index(coord, position, bound_buffer):
 #   are used to calculate the indices used as boundaries to the subset of data
 #   written to the vorticity budget output file.
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-def calc_boundaries(version_number, bound_buffer):
+def calc_boundaries(version_number, bound_buffer=0):
     back_traj_dir = 'back_traj_npz_{:s}/'.format(version_number)
     model_dir = '75m_100p_{:s}/'.format(version_number)
 
@@ -71,10 +71,12 @@ def calc_boundaries(version_number, bound_buffer):
 
     # Both CM1 and this code assume that the coordinate grid positions will
     #   remain constant throughout the model run, so opening the first
-    #   available file alone is sufficient to get the x, y, and z coordinate positions.
+    #   available file alone is sufficient to get the x, y, and z coordinate
+    #   positions.
     ds = Dataset(glob.glob(model_dir + 'JS_75m_run*_000*.nc')[0])
 
-    # Get staggered coordinates for the wind data, converted from kilometers to meters.
+    # Get staggered coordinates for the wind data, converted from kilometers to
+    #   meters.
     stagger_x_coord = np.copy(ds.variables['xf'])*1000.
     stagger_y_coord = np.copy(ds.variables['yf'])*1000.
     stagger_z_coord = np.copy(ds.variables['zf'])*1000.

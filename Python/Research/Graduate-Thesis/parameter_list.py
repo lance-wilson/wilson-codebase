@@ -45,12 +45,19 @@ def parameters(variable):
                         'contour_interval'  : 10,
                         'colormap'          : 'PuOr',
                         'bar_label'         : 'Horizontal Vorticity (1/s)'},
+              'zvort': {'val_interval'      : 0.05,
+                        'datamin'           : -0.2,
+                        'datamax'           : 0.2,
+                        'offset'            : 25,
+                        'contour_interval'  : 33,
+                        'colormap'          : 'PuOr',
+                        'bar_label'         : 'Vertical Vorticity (1/s)'},
              'thpert': {'val_interval'      : 2,
                         'datamin'           : -5.0,
                         'datamax'           : 5.0,
                         'offset'            : 5,
                         'contour_interval'  : 11,
-                        'colormap'          : 'PuOr',
+                        'colormap'          : 'PuOr_r',
                         'bar_label' : 'Potential Temperature Perturbation (K)'},
                   'u': {'val_interval'      : 12,
                         'datamin'           : -30.0,
@@ -127,6 +134,7 @@ def budget_barlabels(variable):
             'zvortb_edif'      : r'Total Diffusion of Vertical Vort. (s$\mathregular{^{-2}}$)',
             # Height
             'zpos'             : r'Height Above Ground (m)',
+            'zvort'            : r'Vertical Vorticity (s$\mathregular{^{-1}}$)',
         }
     return bar_labels[variable]
 
@@ -141,7 +149,7 @@ def budget_legendlabels(variable):
                 '_tilt_term'      : 'Tilting',
                 '_solenoid_term'  : 'Solenoid',
                 '_advection_term' : 'Advection',
-                'vortb_buoy'      : 'Buoyancy',
+                'vortb_buoy'      : 'Baroclinic',#'Buoyancy',
                 'vortb_hadv'      : 'Horiz. Advection',
                 'vortb_vadv'      : 'Vert. Advection',
                 'vortb_hedif'     : 'Hor. Diffusion',
@@ -152,6 +160,28 @@ def budget_legendlabels(variable):
                 # Combined terms
                 'vortb_turb'      : 'Total Turbulence',
                 'vortb_edif'      : 'Total Diffusion',
+            }
+    return legend_labels[variable[1:]]
+
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Colors to be used for the vorticity budget variable line plots (when
+#   plotting trajectory components vs. time).
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+def budget_linecolors(variable):
+
+    legend_labels = {
+                '_stretch_term'   : 'b',
+                '_tilt_term'      : 'g',
+                '_solenoid_term'  : 'r',
+                'vortb_buoy'      : 'r',
+                #'vortb_hedif'     : 'Hor. Diffusion',
+                #'vortb_vedif'     : 'Vert. Diffusion',
+                #'vortb_hturb'     : 'Horiz. Turbulence',
+                #'vortb_vturb'     : 'Vert. Turbulence',
+                'vortb_pgrad'     : 'y',
+                # Combined terms
+                'vortb_turb'      : 'm',
+                'vortb_edif'      : 'c',
             }
     return legend_labels[variable[1:]]
 

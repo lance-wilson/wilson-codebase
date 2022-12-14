@@ -3,7 +3,10 @@
 # Name:
 #   calc_back_traj_start_pos.py
 #
-# Purpose:  
+# Purpose:  Calculate horizontal boundaries of initialization positions (in
+#           meters) of back trajectories based on the boundaries of the box in
+#           terms of grid points, and calculate the distance between points
+#           based on the number of points desired. 
 #
 # Syntax:
 #   python3 calc_back_traj_start_pos.py left_index right_index number_of_points

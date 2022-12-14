@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 #
 # Name:
-#   plot_forward_trajectory.py
+#   plot_forward_trajectory_analysis.py
 #
-# Purpose:  Plot CM1 foward trajectories along with data slices to visualize
-#           where the trajectories go.
+# Purpose:  Plot CM1 foward trajectories used for analysis along with data
+#           slices to visualize where the trajectories go.
 #
-# Syntax: python3 plot_forward_trajectory.py model_version_number parcel_id_num variable [x=x_val] [y=y_val] [z=z_val]
+# Syntax: python3 plot_forward_trajectory_analysis.py model_version_number parcel_id_num/label variable [x=x_min,xmax] [y=y_min,y_max] [z=z_min,z_max]
 #
-#   Input:
+#   Input: CM1 netCDF model files
+#          A CM1 parcel data netCDF file ("cm1out_pdata_{parcel_label}.nc")
+#          The namelist ("namelist_{parcel_label}.input") used to initialize the
+#               model run that generated the parcel data file.
 #
 # Execution Example:
-#   python3 plot_forward_trajectory_elevation_color.py v3 7 xvort z=750
+#   python3 plot_forward_trajectory_analysis.py v5 1000parcel_tornadogenesis xvort x=575,1500 z=75,250
 #
 # Modification History:
 #   2019/09/19 - Lance Wilson:  Modified from code written by Tom Gowan, using
@@ -26,19 +29,22 @@
 #                               plot_output_trajectory_3d_test.py.
 #   2021/12/28 - Lance Wilson:  Added improvements from plot_back_trajectory
 #                               and plot_back_traj_budgets.
+#   2022/03/30 - Lance Wilson:  Split from plot_forward_trajectory_elevation_color
+#                               to plot analysis trajectories, which need to
+#                               have an end time specified.
+#   2022/05/03 - Lance Wilson:  Changed plot ticks to kilometers.
+#   2022/05/04 - Lance Wilson:  Added plotting of data outside of shown domain.
 #
 
-from calc_file_num_offset import calc_parcel_start_time, calc_file_offset
+from calc_file_num_offset import calc_parcel_start_time, calc_parcel_end_time, calc_file_offset
 from parameter_list import parameters
 
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 from netCDF4 import Dataset
 from netCDF4 import MFDataset
 
 import atexit
-import itertools
 import matplotlib
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -50,15 +56,15 @@ def closeNCfiles(ds):
 
 mandatory_arg_num = 3
 
-if len(sys.argv) > 3:
+if len(sys.argv) > mandatory_arg_num:
     version_number = sys.argv[1]
     parcel_id = sys.argv[2]
     variable = sys.argv[3]
 else:
     print('Parcel data file, model version number, and/or variable to plot slice of was not specified.')
-    print('Syntax: python3 plot_forward_trajectory_elevation_color.py model_version_number parcel_id_num variable [x=x_val] [y=y_val] [z=z_val]')
-    print('Example: python3 plot_forward_trajectory_elevation_color.py v3 7 xvort z=75')
-    print('Currently supported version numbers: v3, 10s, v4, v5')
+    print('Syntax: python3 plot_forward_trajectory_analysis.py model_version_number parcel_id_num/label variable [x=x_min,xmax] [y=y_min,y_max] [z=z_min,z_max]')
+    print('Example: python3 plot_forward_trajectory_analysis.py v5 1000parcel_tornadogenesis xvort x=575,1500 z=75,250')
+    print('Currently supported version numbers: v4, v5')
     sys.exit()
 
 # Command-line arguments for plotting limited sets of trajectories.
@@ -68,13 +74,21 @@ z_flag = False
 if len(sys.argv) > mandatory_arg_num + 1:
     for coord in sys.argv[mandatory_arg_num+1:]:
         if coord.startswith('x='):
-            x_plot_val = float(coord.split('=')[-1])
+            x_plot_vals = coord.split('=')[-1].split(',')
+            # Convert to kilometers.
+            x_plot_min = float(x_plot_vals[0])/1000.
+            x_plot_max = float(x_plot_vals[1])/1000.
             x_flag = True
         if coord.startswith('y='):
-            y_plot_val = float(coord.split('=')[-1])
+            y_plot_vals = coord.split('=')[-1].split(',')
+            # Convert to kilometers.
+            y_plot_min = float(y_plot_vals[0])/1000.
+            y_plot_max = float(y_plot_vals[1])/1000.
             y_flag = True
         if coord.startswith('z='):
-            z_plot_val = float(coord.split('=')[-1])
+            z_plot_vals = coord.split('=')[-1].split(',')
+            z_plot_min = float(z_plot_vals[0])
+            z_plot_max = float(z_plot_vals[1])
             z_flag = True
 
 if version_number.startswith('v'):
@@ -89,36 +103,44 @@ model_dir = '75m_100p_{:s}/'.format(version_number)
 parcel_dir = '75m_100p_{:s}/parcel_files/'.format(version_number)
 namelist_dir = '75m_100p_{:s}/namelists/'.format(version_number)
 
+output_dir = model_dir + '/forward_traj_analysis/ForwardTrajectoryImages/'
+
 parcel_file_name = parcel_dir + 'cm1out_pdata_{:s}.nc'.format(parcel_id)
 namelist_filename = namelist_dir + 'namelist_{:s}.input'.format(parcel_id)
 
-# How many minutes of trajectories to plot.
-plot_limit_minutes = 20.
-
 # How frequency to show output plots (every N minutes).
-plot_freq_minutes = 5.
+plot_freq_minutes = 4.
 
 # Minimum and maximum indices in each dimension.
 # Full storm scale
 xmin = 160
-xmax = 610
+xmax = 810
 ymin = 170
+ymin = 140
 ymax = 620
 zmin = 0
 zmax = 40
 
-# Axis tick intervals based in meters (tick marks every N meters).
-xval_interval = 4000.
-yval_interval = 4000.
-zval_interval = 60.
+# Axis tick intervals based in kilometers (tick marks every N kilometers).
+xval_interval = 4.
+yval_interval = 4.
+
+# Colormap used for the elevation colorbar.
+elev_colormap = 'gist_rainbow'
 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 # Use the namelist.input file to get when parcels start moving.
 parcel_start_time = calc_parcel_start_time(parcel_id, namelist_filename)
 
+# Use the namelist.input file to get when this parcel run ends.
+parcel_end_time = calc_parcel_end_time(parcel_id, namelist_filename)
+
 # Model file when parcels start moving.
 file_num_offset = calc_file_offset(version_number, parcel_start_time)
+
+# Model file when parcels stop (should be one output step after the intended
+#   termination time).
+file_num_end = calc_file_offset(version_number, parcel_end_time)
 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Get parameters for the background field variable from parameter_list.py
@@ -133,10 +155,21 @@ parameters = parameters(variable)
 # Load forward trajectory data from the cm1out_pdata netCDF file.
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ds_parcel = Dataset(parcel_file_name, "r")
-xpos = np.copy(ds_parcel.variables['x'][:])
-ypos = np.copy(ds_parcel.variables['y'][:])
+# Converting x and y locations to kilometers for plotting.
+xpos = np.copy(ds_parcel.variables['x'][:])/1000.
+ypos = np.copy(ds_parcel.variables['y'][:])/1000.
+# Leaving z location in meters (for colorbar scale).
 zpos = np.copy(ds_parcel.variables['z'][:])
+parcel_times = np.copy(ds_parcel.variables['time'][:])
 ds_parcel.close()
+
+# Use parcel start and end time to determine the array indices of parcel data
+#   to use.
+parcel_start_diff = np.abs(parcel_times - parcel_start_time)
+parcel_end_diff = np.abs(parcel_times - parcel_end_time)
+
+parcel_start_index = np.argwhere(parcel_start_diff == np.min(parcel_start_diff))[0,0]
+parcel_end_index = np.argwhere(parcel_end_diff == np.min(parcel_end_diff))[0,0]
 
 # Number of parcel output times in the model run.
 parcel_output_num = len(xpos)
@@ -148,7 +181,7 @@ total_parcel_num = xpos[0].size
 # Open CM1 dataset over the time period where forward trajectories were
 #   calculated in the model.
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-file_list = [model_dir + 'JS_75m_run{:d}_{:06d}.nc'.format(run_number, file_num) for file_num in range(file_num_offset, parcel_output_num+1)]
+file_list = [model_dir + 'JS_75m_run{:d}_{:06d}.nc'.format(run_number, file_num) for file_num in range(file_num_offset, file_num_end)]
 ds = MFDataset(file_list)
 # Close the netCDF dataset when the program exits.
 atexit.register(closeNCfiles, ds)
@@ -162,23 +195,22 @@ x_dim_param = 'xf' if variable == 'u' else 'xh'
 y_dim_param = 'yf' if variable == 'v' else 'yh'
 z_dim_param = 'zf' if variable == 'w' else 'z'
 
-# Minimum and maximum values in each dimension (based on the input indices)
-#   (converted to meters).
-xval_min = ds.variables[x_dim_param][xmin]*1000.
-xval_max = ds.variables[x_dim_param][xmax]*1000.
-yval_min = ds.variables[y_dim_param][ymin]*1000.
-yval_max = ds.variables[y_dim_param][ymax]*1000.
-zval_min = ds.variables[z_dim_param][zmin]*1000.
-zval_max = ds.variables[z_dim_param][zmax]*1000.
-
-# Location of axis tick marks (in meters)
-xticks = np.arange(xval_min,xval_max,xval_interval)
-yticks = np.arange(yval_min,yval_max,yval_interval)
-zticks = np.arange(zval_min,zval_max,zval_interval)
-
 # Range of data points on which to plot the background data.
-x_vals = np.linspace(xval_min, xval_max,xmax-xmin)
-y_vals = np.linspace(yval_min, yval_max,ymax-ymin)
+x_vals = np.copy(ds.variables[x_dim_param])
+y_vals = np.copy(ds.variables[y_dim_param])
+
+# Minimum and maximum values in each dimension (based on the input indices)
+#   (in kilometers).
+xval_min = x_vals[xmin]
+xval_max = x_vals[xmax]
+yval_min = y_vals[ymin]
+yval_max = y_vals[ymax]
+zval_min = ds.variables[z_dim_param][zmin]
+zval_max = ds.variables[z_dim_param][zmax]
+
+# Location of axis tick marks (in kilometers)
+xticks = np.arange(np.round(xval_min),np.round(xval_max),xval_interval)
+yticks = np.arange(np.round(yval_min),np.round(yval_max),yval_interval)
 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Variables to put in plot title
@@ -188,43 +220,48 @@ contour_height = int(ds.variables[z_dim_param][parameters['offset']] * 1000.)
 
 variable_long_name = getattr(ds.variables[variable], 'def').title()
 
-#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Starting points of the trajectories (based on initialization points).
-#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-plot_indices_part = {}
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # For each set of coordinates, the valid plot indices for that dimension are
-#   the indices where that position array is equal to the command-line
-#   argument if one was supplied.  If no argument was supplied, then all
-#   indices may be used.
+#   the indices where that position array is between (inclusive) the values (in
+#   meters) in the command line argument (ex. x=750,1000) if one was supplied.
+#   If no argument was supplied, then all indices may be used.
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 if x_flag == True:
-    x_diff = np.abs(xpos[file_num_offset-1] - x_plot_val)
-    plot_indices_part['x'] = np.where(x_diff == np.min(x_diff))[0]
+    part1 = np.where(xpos[parcel_start_index] >= x_plot_min)[0]
+    part2 = np.where(xpos[parcel_start_index] <= x_plot_max)[0]
+    plot_indices_part_x = np.intersect1d(part1, part2)
 else:
-    plot_indices_part['x'] = range(total_parcel_num)
+    plot_indices_part_x = range(total_parcel_num)
 
 if y_flag == True:
-    plot_indices_part['y'] = np.where(ypos[0] == y_plot_val)[0]
+    part1 = np.where(ypos[parcel_start_index] >= y_plot_min)[0]
+    part2 = np.where(ypos[parcel_start_index] <= y_plot_max)[0]
+    plot_indices_part_y = np.intersect1d(part1, part2)
 else:
-    plot_indices_part['y'] = range(total_parcel_num)
+    plot_indices_part_y = range(total_parcel_num)
 
 if z_flag == True:
-    plot_indices_part['z'] = np.where(zpos[0] == z_plot_val)[0]
+    part1 = np.where(zpos[parcel_start_index] >= z_plot_min)[0]
+    part2 = np.where(zpos[parcel_start_index] <= z_plot_max)[0]
+    plot_indices_part_z = np.intersect1d(part1, part2)
 else:
-    plot_indices_part['z'] = range(total_parcel_num)
+    plot_indices_part_z = range(total_parcel_num)
 
 # Get indices that are to be plotted from the intersection of the x and y
 #   parts, and then the intersection of that and the z part.
-part1 = np.intersect1d(plot_indices_part['x'], plot_indices_part['y'])
-plot_indices = np.intersect1d(part1, plot_indices_part['z'])
+part1 = np.intersect1d(plot_indices_part_x, plot_indices_part_y)
+plot_indices = np.intersect1d(part1, plot_indices_part_z)
 
 if len(plot_indices) > 0:
-    # Minimum and maximum values for each position initialization.
-    xpos_min = int(np.min(xpos[file_num_offset-1,plot_indices]))
-    ypos_min = int(np.min(ypos[file_num_offset-1,plot_indices]))
-    zpos_min = int(np.min(zpos[file_num_offset-1,plot_indices]))
-    xpos_max = int(np.max(xpos[file_num_offset-1,plot_indices]))
-    ypos_max = int(np.max(ypos[file_num_offset-1,plot_indices]))
-    zpos_max = int(np.max(zpos[file_num_offset-1,plot_indices]))
+    # Minimum and maximum values for each position initialization (in meters).
+    xpos_min = int(np.min(xpos[parcel_start_index,plot_indices])*1000)
+    ypos_min = int(np.min(ypos[parcel_start_index,plot_indices])*1000)
+    zpos_min = int(np.min(zpos[parcel_start_index,plot_indices]))
+    xpos_max = int(np.max(xpos[parcel_start_index,plot_indices])*1000)
+    ypos_max = int(np.max(ypos[parcel_start_index,plot_indices])*1000)
+    zpos_max = int(np.max(zpos[parcel_start_index,plot_indices]))
 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Calculate the indices of the CM1 data subset that are to be plotted, based
@@ -232,7 +269,7 @@ if len(plot_indices) > 0:
 #   The earliest (initialization) time is also added to the list to be plotted.
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Convert plot_limit_minutes to seconds.
-plot_limit_seconds = 60. * plot_limit_minutes
+plot_limit_seconds = parcel_end_time - parcel_start_time
 
 data_timespan = ds.variables['time'][-1] - ds.variables['time'][0]
 
@@ -280,19 +317,24 @@ for plot_time in plot_freq_times:
 if not file_num_offset in plot_file_nums:
     plot_file_nums = [file_num_offset] + plot_file_nums
 
+# Make sure the last (termination) time is plotted.
+if not (file_num_end - 1) in plot_file_nums:
+    plot_file_nums.append(file_num_end - 1)
+
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #   Plot Trajectories
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Loop over each parcel output time that is to be plotted.
 for cur_file_num in plot_file_nums:
-    fig2 = plt.figure(figsize=(10,7))
+    #fig2 = plt.figure(figsize=(10,7))
+    fig2 = plt.figure(figsize=(13,7))
 
     # Initialize the plot.
     ax = fig2.add_subplot(111)
 
     cur_index_num = cur_file_num - file_num_offset
     # Background field variable data for the filled contour plot.
-    data_array = np.copy(ds.variables[variable][cur_index_num,parameters['offset'],ymin:ymax,xmin:xmax])
+    data_array = np.copy(ds.variables[variable][cur_index_num,parameters['offset'],:,:])
 
     z_vals = data_array
 
@@ -305,21 +347,25 @@ for cur_file_num in plot_file_nums:
     # The simulation time (in seconds) of this model time step.
     real_file_time = int(ds.variables['time'][cur_index_num])
 
+    cur_parcel_diff = np.abs(parcel_times - real_file_time)
+    cur_parcel_index = np.argwhere(cur_parcel_diff == np.min(cur_parcel_diff))[0,0]
+
     if len(plot_indices) > 0:
+        # Scatter plot of the initial positions of the trajectories.
+        #norm = plt.Normalize(np.nanmin(zpos), np.nanmax(zpos))
+        norm = plt.Normalize(np.nanmin(zpos), 1000.)
+        ax.scatter(xpos[parcel_start_index, plot_indices], ypos[parcel_start_index, plot_indices], c=zpos[parcel_start_index, plot_indices], norm=norm, cmap=elev_colormap)
+
         for j in plot_indices:
-            # Scatter plot of the initial positions of the trajectories.
-            ax.scatter(xpos[file_num_offset-1,j], ypos[file_num_offset-1,j])
             # Take subsets of x, y, and z trajectory positions from the
             #   earliest time to the time currently being plotted.
-            xpos_subset = xpos[file_num_offset-1:cur_file_num,j]
-            ypos_subset = ypos[file_num_offset-1:cur_file_num,j]
-            zpos_subset = zpos[file_num_offset-1:cur_file_num,j]
+            xpos_subset = xpos[parcel_start_index:cur_parcel_index,j]
+            ypos_subset = ypos[parcel_start_index:cur_parcel_index,j]
+            zpos_subset = zpos[parcel_start_index:cur_parcel_index,j]
 
             points = np.array([xpos_subset, ypos_subset]).T.reshape(-1, 1, 2)
             segments = np.concatenate([points[:-1], points[1:]], axis=1)
-            #norm = plt.Normalize(np.nanmin(zpos), np.nanmax(zpos))
-            norm = plt.Normalize(np.nanmin(zpos), 1000.)
-            lc = LineCollection(segments, cmap='gist_rainbow', norm=norm)
+            lc = LineCollection(segments, cmap=elev_colormap, norm=norm)
             lc.set_array(zpos_subset)
             lc.set_linewidth(2)
             line = ax.add_collection(lc)
@@ -332,8 +378,10 @@ for cur_file_num in plot_file_nums:
         plt.title('Simulation Time {:d} s (Model File {:d})\n{:s} at Height {:d} m'.format(real_file_time, model_file_num, variable_long_name, contour_height))
     ax.set_xticks(xticks)
     ax.set_yticks(yticks)
-    ax.set_xlabel('E-W Distance (m)', fontsize = 16)
-    ax.set_ylabel('N-S Distance (m)', fontsize = 16)
+    ax.set_xlim(xval_min, xval_max)
+    ax.set_ylim(yval_min, yval_max)
+    ax.set_xlabel('E-W Distance (km)', fontsize = 16)
+    ax.set_ylabel('N-S Distance (km)', fontsize = 16)
 
     # Colorbar ticks for the background field variable.
     cticks = np.arange(parameters['datamin'], parameters['datamax']+parameters['val_interval'], parameters['val_interval'])
@@ -347,7 +395,7 @@ for cur_file_num in plot_file_nums:
     plt.tight_layout()
 
     # Code to save files
-    #image_file_name = 'ForwardTrajectoryImages/cm1_forwardtraj_{:s}_{:s}_nc{:d}_time{:d}.png'.format(parcel_id, variable, model_file_num, real_file_time)
+    image_file_name = output_dir + 'cm1_forwardtraj_{:s}_{:s}_nc{:d}_time{:d}.png'.format(parcel_id, variable, model_file_num, real_file_time)
     #plt.savefig(image_file_name, dpi=400)
 
 plt.show()

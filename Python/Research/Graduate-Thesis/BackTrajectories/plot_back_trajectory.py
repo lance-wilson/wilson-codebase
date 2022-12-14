@@ -36,7 +36,6 @@
 #                               duplication of plots at earliest times.
 #
 
-#from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, Normalize
 from netCDF4 import Dataset
@@ -95,10 +94,10 @@ archive_dir = 'back_traj_npz_{:s}/'.format(version_number)
 output_dir = 'BackTrajectoryImages/'
 
 # How far back (in minutes) to plot trajectories.
-plot_limit_minutes = 20.
+plot_limit_minutes = 10.#20.
 
 # How frequency to show output plots (every N minutes).
-plot_freq_minutes = 1.
+plot_freq_minutes = 3.#1.
 
 # Minimum and maximum indices in each dimension.
 # Full storm scale
@@ -110,9 +109,10 @@ ymax = 620
 zmin = 0
 zmax = 80
 
-# Axis intervals based in meters (tick marks every N meters).
-xval_interval = 8000.
-yval_interval = 4000.
+# Axis intervals based in kilometers (X,Y) meters (Z) (tick marks every N
+#   meters).
+xval_interval = 4.#8000.
+yval_interval = 4.#4000.
 zval_interval = 60.
 
 # Model height level below which trajectory data is no longer safe to use
@@ -139,8 +139,8 @@ parameters = parameters(variable)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 traj_data = np.load(archive_dir + 'backtraj_{:s}.npz'.format(parcel_label))
 # Position data for the back trajectories.
-xpos = traj_data['xpos']
-ypos = traj_data['ypos']
+xpos = traj_data['xpos']/1000.
+ypos = traj_data['ypos']/1000.
 zpos = traj_data['zpos']
 parcel_dimensions = traj_data['parcel_dimension']
 # Total number of parcels for this set of data.
@@ -159,7 +159,7 @@ parcel_time_step_num = len(xpos)
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Open CM1 dataset over the time period where back trajectories are calculated.
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-file_list = [model_dir + 'JS_75m_run{:d}_000{:03d}.nc'.format(run_number, file_num) for file_num in range(file_num_offset+1, file_num_offset+parcel_time_step_num+1)]
+file_list = [model_dir + 'JS_75m_run{:d}_{:06d}.nc'.format(run_number, file_num) for file_num in range(file_num_offset+1, file_num_offset+parcel_time_step_num+1)]
 ds = MFDataset(file_list)
 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -172,22 +172,24 @@ y_dim_param = 'yf' if variable == 'v' else 'yh'
 z_dim_param = 'zf' if variable == 'w' else 'z'
 
 # Minimum and maximum values in each dimension (based on the input indices)
-#   (converted to meters).
-xval_min = ds.variables[x_dim_param][xmin]*1000.
-xval_max = ds.variables[x_dim_param][xmax]*1000.
-yval_min = ds.variables[y_dim_param][ymin]*1000.
-yval_max = ds.variables[y_dim_param][ymax]*1000.
-zval_min = ds.variables[z_dim_param][zmin]*1000.
-zval_max = ds.variables[z_dim_param][zmax]*1000.
+#   (not converted to meters).
+xval_min = ds.variables[x_dim_param][xmin]#*1000.
+xval_max = ds.variables[x_dim_param][xmax]#*1000.
+yval_min = ds.variables[y_dim_param][ymin]#*1000.
+yval_max = ds.variables[y_dim_param][ymax]#*1000.
+zval_min = ds.variables[z_dim_param][zmin]#*1000.
+zval_max = ds.variables[z_dim_param][zmax]#*1000.
 
-# Locations of axis tick marks (in meters).
-xticks = np.arange(xval_min,xval_max,xval_interval)
-yticks = np.arange(yval_min,yval_max,yval_interval)
+# Locations of axis tick marks (in kilometers).
+xticks = np.arange(np.round(xval_min),np.round(xval_max),xval_interval)
+yticks = np.arange(np.round(yval_min),np.round(yval_max),yval_interval)
 zticks = np.arange(zval_min,zval_max,zval_interval)
 
 # Range of data points on which to plot the background data.
-x_vals = np.linspace(xval_min, xval_max,xmax-xmin)
-y_vals = np.linspace(yval_min, yval_max,ymax-ymin)
+#x_vals = np.linspace(xval_min, xval_max,xmax-xmin)
+#y_vals = np.linspace(yval_min, yval_max,ymax-ymin)
+x_vals = np.copy(ds.variables[x_dim_param])
+y_vals = np.copy(ds.variables[y_dim_param])
 
 # Initialization Position time for parcels.
 initialize_time = int(ds.variables['time'][parcel_time_step_num-1])
@@ -231,11 +233,11 @@ plot_indices = np.intersect1d(part1, plot_indices_part['z'])
 
 if len(plot_indices) > 0:
     # Minimum and maximum values for each position initialization.
-    xpos_min = int(np.min(xpos[0,plot_indices]))
-    ypos_min = int(np.min(ypos[0,plot_indices]))
+    xpos_min = int(np.min(xpos[0,plot_indices])*1000.)
+    ypos_min = int(np.min(ypos[0,plot_indices])*1000.)
     zpos_min = int(np.min(zpos[0,plot_indices]))
-    xpos_max = int(np.max(xpos[0,plot_indices]))
-    ypos_max = int(np.max(ypos[0,plot_indices]))
+    xpos_max = int(np.max(xpos[0,plot_indices])*1000.)
+    ypos_max = int(np.max(ypos[0,plot_indices])*1000.)
     zpos_max = int(np.max(zpos[0,plot_indices]))
 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -251,6 +253,7 @@ data_timespan = ds.variables['time'][-1] - ds.variables['time'][0]
 #   the available amount of data by limiting it to the total timespan of data.
 if plot_limit_seconds > data_timespan:
     plot_limit_seconds = np.round(data_timespan)
+
 # Array of all time steps lengths for this set of trajectory data.
 time_step_lengths = np.round(ds.variables['time'][1:] - ds.variables['time'][:-1])
 # Cumulative sum array of the inverse of the time step lengths, as we need to
@@ -336,7 +339,8 @@ for cur_file_num in plot_file_nums:
     ax = fig2.add_subplot(111)
 
     # Background field variable data for the filled contour plot.
-    data_array = np.copy(ds.variables[variable][cur_file_num, parameters['offset'], ymin:ymax, xmin:xmax])
+    #data_array = np.copy(ds.variables[variable][cur_file_num, parameters['offset'], ymin:ymax, xmin:xmax])
+    data_array = np.copy(ds.variables[variable][cur_file_num, parameters['offset'], :, :])
 
     z_vals = data_array
 
@@ -361,8 +365,8 @@ for cur_file_num in plot_file_nums:
 
             points = np.array([xpos_subset, ypos_subset]).T.reshape(-1, 1, 2)
             segments = np.concatenate([points[:-1], points[1:]], axis=1)
-            norm = plt.Normalize(np.nanmin(zpos), np.nanmax(zpos))
-            #norm = plt.Normalize(np.nanmin(zpos), 1000.)
+            #norm = plt.Normalize(np.nanmin(zpos), np.nanmax(zpos))
+            norm = plt.Normalize(np.nanmin(zpos), 1000.)
             #lc = LineCollection(segments, cmap='gist_rainbow', norm=norm)
             lc = LineCollection(segments, cmap=newcmp, norm=norm)
             lc.set_array(zpos_subset)
@@ -378,8 +382,10 @@ for cur_file_num in plot_file_nums:
 
     ax.set_xticks(xticks)
     ax.set_yticks(yticks)
-    ax.set_xlabel('E-W Distance from Center (m)', fontsize = 16)
-    ax.set_ylabel('N-S Distance from Center (m)', fontsize = 16)
+    ax.set_xlim(xval_min, xval_max)
+    ax.set_ylim(yval_min, yval_max)
+    ax.set_xlabel('E-W Distance from Center (km)', fontsize = 16)
+    ax.set_ylabel('N-S Distance from Center (km)', fontsize = 16)
 
     # Colorbar ticks for the background field variable.
     cticks = np.arange(parameters['datamin'], parameters['datamax']+parameters['val_interval'], parameters['val_interval'])
