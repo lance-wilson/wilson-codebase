@@ -5,7 +5,7 @@
 #
 # Syntax: perl get_weather.pl site_id
 #
-# Example: perl get_weather.pl far
+# Example: perl get_weather.pl kfar
 #
 # Alias: get_wx='perl get_weather.pl'
 #
